@@ -61,7 +61,7 @@ public class Bookingadmin extends javax.swing.JFrame {
     
     private void initKafkaProducer() {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
+        props.put("bootstrap.servers", "1192.168.18.50:9092, 192.168.18.55:9092, 192.168.18.100:9092");
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         producer = new KafkaProducer<>(props);
