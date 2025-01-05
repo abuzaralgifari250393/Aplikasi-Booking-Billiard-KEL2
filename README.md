@@ -1,0 +1,1 @@
+FINAL PROJECT TI22B KELOMPOK 2 Ketua : Abu Zar Al Gifari (22SA31A071) Anggota : Wahbah Azzuhaili Rosadi (22SA31A046) Gani Tri Nova Romadoni (22SA31A050) Ardian Fathul Azis Saputra (22SA31A030) Nur Wahid (22SA31A068)
