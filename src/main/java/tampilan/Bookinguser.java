@@ -85,46 +85,17 @@ public class Bookinguser extends javax.swing.JFrame {
 
     private void initKafkaProducer() {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
+        props.put("bootstrap.servers", "192.168.29.167:9092, 192.168.29.35:9092, 192.168.29.45:9092");
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
         producer = new KafkaProducer<>(props);
     }
 
-    private void saveBookingToDatabase() {
-
-        try {
-            int userId = Integer.parseInt(userIdLabel.getText());
-            int nomorMeja = Integer.parseInt((String) nomorMejaField.getSelectedItem());
-            String nama = namaField.getText();
-            String selectedPaket = (String) paketComboBox.getSelectedItem();
-            String waktu = (String) waktuField.getSelectedItem();
-            int paketId = Integer.parseInt(selectedPaket.split(" - ")[0]);
-            int harga = Integer.parseInt(hargaField.getText());
-
-            String query = "INSERT INTO booking (userid, mejaid, nama, paketid, waktu, harga, status) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement stmt = connection.prepareStatement(query);
-            stmt.setInt(1, userId);
-            stmt.setInt(2, nomorMeja);
-            stmt.setString(3, nama);
-            stmt.setInt(4, paketId);
-            stmt.setString(5, waktu);
-            stmt.setInt(6, harga);
-            stmt.setString(7, "Pending");
-
-            int rowsInserted = stmt.executeUpdate();
-            if (rowsInserted > 0) {
-                JOptionPane.showMessageDialog(this, "Booking saved to database successfully!");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Failed to save booking to database!");
-        }
-    }
+    
 
     private void sendBookingToKafka() {
-        saveBookingToDatabase();
+        
         try {
             int userId = Integer.parseInt(userIdLabel.getText());
             int nomorMeja = Integer.parseInt((String) nomorMejaField.getSelectedItem());

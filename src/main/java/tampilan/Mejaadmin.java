@@ -46,6 +46,7 @@ public class Mejaadmin extends javax.swing.JFrame {
         paketDurasi.put("4", 240);
         paketDurasi.put("5", 300);
         paketDurasi.put("6", 360);
+        paketDurasi.put("6", 420);
         
         // Listener for Paket field to update WaktuMulai and WaktuSelesai automatically
         Paket.addActionListener(e -> updateWaktuFields());
@@ -685,7 +686,7 @@ public class Mejaadmin extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
-        new Konsumermejaadmin().setVisible(true);
+        new Konsumerbookingadminmeja().setVisible(true);
     }//GEN-LAST:event_jButton6ActionPerformed
 
     /**

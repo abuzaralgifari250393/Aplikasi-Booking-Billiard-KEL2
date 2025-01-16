@@ -7,12 +7,19 @@ package tampilan;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.sql.*;
+import java.util.Properties;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
 /**
  *
  * @author Lenovo
  */
 public class Hargaadmin extends javax.swing.JFrame {
+    private KafkaProducer<String, String> producer;
     private Connection connection;
     String urlvalue = "jdbc:mysql://localhost/last?user=root&password=";
 
@@ -24,6 +31,36 @@ public class Hargaadmin extends javax.swing.JFrame {
         connectToDatabase();
         initComponents();
         loadDataMeja();
+        initKafkaProducer();
+    }
+    
+    private void initKafkaProducer() {
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "192.168.29.167:9092, 192.168.29.35:9092, 192.168.29.45:9092");
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        producer = new KafkaProducer<>(props);
+    }
+    
+    private void sendharga() {
+        try {
+            String Namapaket = txtNamaPaket.getText();
+            String Hargapaket = txtHarga.getText();
+            String Durasi = txtDurasi.getText();
+            
+            
+
+
+            String message = String.format("{\"Nama\":%s, \"Harga\":%s, \"Durasi\":%s}",
+                    Namapaket, Hargapaket, Durasi);
+
+            producer.send(new ProducerRecord<>("topik-harga1", null, message));
+            JOptionPane.showMessageDialog(this, "Booking sent to Kafka!");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to send booking!");
+        }
     }
     
     private void resetHargaId() {
@@ -47,56 +84,7 @@ public class Hargaadmin extends javax.swing.JFrame {
         }
     }
     
-    private void simpanData() {
-        String namaPaket = txtNamaPaket.getText().trim();
-        String harga = txtHarga.getText().trim();
-        String durasi = txtDurasi.getText().trim();
-
-        // Validasi Input
-        if (namaPaket.isEmpty() || harga.isEmpty() || durasi.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Koneksi Database
-        String url = "jdbc:mysql://localhost:3306/last"; // Ganti dengan nama database Anda
-        String user = "root"; // Ganti dengan username database Anda
-        String password = ""; // Ganti dengan password database Anda
-
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            conn = DriverManager.getConnection(url, user, password);
-
-            // Query untuk menambahkan data
-            String sql = "INSERT INTO paket (nama_paket, harga, durasi) VALUES (?, ?, ?)";
-            pstmt = conn.prepareStatement(sql);
-
-            
-            pstmt.setString(1, namaPaket);
-            pstmt.setString(2, harga);
-            pstmt.setString(3, durasi);
-
-            int rowsInserted = pstmt.executeUpdate();
-
-            if (rowsInserted > 0) {
-                JOptionPane.showMessageDialog(this, "Data berhasil disimpan!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                clearForm();
-                loadDataMeja();
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            // Menutup koneksi
-            try {
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
+    
     
     private void updateData() {
         String paketId = txtPaketId.getText().trim();
@@ -256,6 +244,7 @@ public class Hargaadmin extends javax.swing.JFrame {
         jButton3 = new javax.swing.JButton();
         txtPaketId = new javax.swing.JTextField();
         jButton4 = new javax.swing.JButton();
+        jButton5 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -325,6 +314,13 @@ public class Hargaadmin extends javax.swing.JFrame {
             }
         });
 
+        jButton5.setText("Konsumer harga");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -356,7 +352,8 @@ public class Hargaadmin extends javax.swing.JFrame {
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, 86, Short.MAX_VALUE)
-                                    .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))))
+                                    .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addComponent(jButton5, javax.swing.GroupLayout.Alignment.TRAILING))))
                 .addContainerGap(24, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -387,7 +384,9 @@ public class Hargaadmin extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel5)
                     .addComponent(txtDurasi, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(26, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton5)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -405,7 +404,8 @@ public class Hargaadmin extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        simpanData();
+        loadDataMeja();
+        sendharga();
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void tableModelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableModelMouseClicked
@@ -430,6 +430,11 @@ public class Hargaadmin extends javax.swing.JFrame {
         this.setVisible(false);
         new Dasboardadmin().setVisible(true);
     }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        this.setVisible(true);
+        new Konsumerharga().setVisible(true);
+    }//GEN-LAST:event_jButton5ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -471,6 +476,7 @@ public class Hargaadmin extends javax.swing.JFrame {
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;

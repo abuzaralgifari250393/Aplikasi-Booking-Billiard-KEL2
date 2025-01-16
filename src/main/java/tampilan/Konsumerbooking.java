@@ -87,8 +87,8 @@ public class Konsumerbooking extends JFrame {
     private void startConsumer() {
         // Kafka Consumer Configuration
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092"); // Kafka server address
-        props.put("group.id", "booking-consumer-group");
+        props.put("bootstrap.servers", "192.168.29.167:9092, 192.168.29.35:9092, 192.168.29.45:9092"); // Kafka server address
+        props.put("group.id", "bookingg-consumer-group");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("auto.offset.reset", "earliest"); // Start consuming from the earliest message
@@ -103,6 +103,7 @@ public class Konsumerbooking extends JFrame {
                     for (ConsumerRecord<String, String> record : records) {
                         String feedbackMessage = record.value();
                         feedbackArea.append("Received Feedback: " + feedbackMessage + "\n\n");
+                        saveToDatabase(feedbackMessage);
                     }
                 }
             } catch (Exception ex) {
@@ -117,7 +118,37 @@ public class Konsumerbooking extends JFrame {
         consumerThread.start();
         feedbackArea.append("Kafka Consumer started successfully.\n");
     }
+    
+    private void saveToDatabase(String message) {
+        try {
+            // Mengasumsikan message dalam format sederhana: {"userid": 1, "nomormeja": 3, "nama": "abu", "paketid": 2, "waktu": "11 am", "harga": 20000, "status": "Pending"}
+            message = message.replace("{", "").replace("}", "").replace("\"", "");
+            String[] parts = message.split(",");
 
+            int Userid = Integer.parseInt(parts[0].split(":")[1].trim());  // Trim spasi agar tidak ada kesalahan
+            int nomorMeja = Integer.parseInt(parts[1].split(":")[1].trim());  // Trim spasi agar tidak ada kesalahan
+            String nama = parts[2].split(":")[1].trim();
+            String waktu = parts[4].split(":")[1].trim();  // Waktu diambil sebagai string
+            int paketId = Integer.parseInt(parts[3].split(":")[1].trim());  // Trim spasi agar tidak ada kesalahan
+            String harga = parts[5].split(":")[1].trim();
+
+            // Query SQL Anda
+            String query = "INSERT INTO booking (userid, mejaid, nama, paketid, harga, status, waktu) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            PreparedStatement stmt = dbConnection.prepareStatement(query);
+            stmt.setInt(1, Userid);
+            stmt.setInt(2, nomorMeja);
+            stmt.setString(3, nama);
+            stmt.setInt(4, paketId);
+            stmt.setString(5, harga);  // Set waktu sebagai String
+            stmt.setString(6, "Pending");
+            stmt.setString(7, waktu);
+
+            stmt.executeUpdate();
+            feedbackArea.append("Feedback berhasil disimpan ke database.\n");
+        } catch (Exception e) {
+            feedbackArea.append("Terjadi kesalahan saat menyimpan feedback ke database: " + e.getMessage() + "\n");
+        }
+    }
     
     public static void main(String[] args) {
         new Konsumerbooking(); // Start the application

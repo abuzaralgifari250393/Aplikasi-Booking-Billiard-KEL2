@@ -37,31 +37,11 @@ public class Bookingadmin extends javax.swing.JFrame {
     
     }
     
-    private void resetBookingId() {
-        try {
-            // Langkah 1: Reset nilai mejaid agar berurutan
-            String resetQuery = "SET @num := 0; " +
-                            "UPDATE booking SET bookingid = (@num := @num + 1) ORDER BY bookingid; " +
-                            "ALTER TABLE booking AUTO_INCREMENT = 1;";
-
-
-            String[] queries = resetQuery.split("; ");
-            for (String query : queries) {
-                PreparedStatement stmt = connection.prepareStatement(query);
-                stmt.executeUpdate();
-            }
-
-            JOptionPane.showMessageDialog(this, "Meja ID berhasil diatur ulang!");
-            loadDataMeja(); // Refresh tabel di GUI
-        } catch (SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal mengatur ulang Meja ID.");
-        }
-    }
+    
     
     private void initKafkaProducer() {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
+        props.put("bootstrap.servers", "192.168.29.167:9092, 192.168.29.35:9092, 192.168.29.45:9092");
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         producer = new KafkaProducer<>(props);
@@ -80,6 +60,42 @@ public class Bookingadmin extends javax.swing.JFrame {
                     Konfirmasi, bookingNama, Status, Waktu);
 
             producer.send(new ProducerRecord<>("topik-konfirmasibooking", null, message));
+            JOptionPane.showMessageDialog(this, "Booking sent to Kafka!");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to send booking!");
+        }
+    }
+    
+    private void sendupdate() {
+        try {
+            String bookingId = konfirmasiid.getText();
+            
+
+
+            String message = String.format("{\"feedbackid\":%s}",
+                    bookingId);
+
+            producer.send(new ProducerRecord<>("topik-updatebookinguser", null, message));
+            JOptionPane.showMessageDialog(this, "Booking sent to Kafka!");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to send booking!");
+        }
+    }
+    
+    private void sendFeedbackdelete() {
+        try {
+            String bookingId = konfirmasiid.getText();
+            
+
+
+            String message = String.format("{\"feedbackid\":%s}",
+                    bookingId);
+
+            producer.send(new ProducerRecord<>("topik-deletebooking", null, message));
             JOptionPane.showMessageDialog(this, "Booking sent to Kafka!");
 
         } catch (Exception e) {
@@ -190,96 +206,9 @@ public class Bookingadmin extends javax.swing.JFrame {
         tableModel.setModel(model);
     }
     
-    private void updateData() {
-        String bookingId = konfirmasiid.getText().trim();
-        String Status = (String) status.getSelectedItem();
-        String adminId = adminid.getText().trim();
-
-
-        if (bookingId.isEmpty() || Status.isEmpty()|| adminId.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String url = "jdbc:mysql://localhost:3306/last";
-        String user = "root";
-        String password = "";
-
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            conn = DriverManager.getConnection(url, user, password);
-            String sql = "UPDATE booking SET status = ?, adminid = ? WHERE bookingid = ?";
-            pstmt = conn.prepareStatement(sql);
-
-            pstmt.setString(1, Status);
-            pstmt.setString(2, adminId);
-            pstmt.setInt(3, Integer.parseInt(bookingId));
-
-            int rowsUpdated = pstmt.executeUpdate();
-
-            if (rowsUpdated > 0) {
-                JOptionPane.showMessageDialog(this, "Data berhasil diperbarui!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                 // Reset JTable
-                connectToDatabase(); // Reload data
-                
-                loadDataMeja();
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            try {
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
     
-    private void hapusData() {
-        String paketId = konfirmasiid.getText().trim();
-
-        if (paketId.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Pilih data yang akan dihapus!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String url = "jdbc:mysql://localhost:3306/last";
-        String user = "root";
-        String password = "";
-
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            conn = DriverManager.getConnection(url, user, password);
-            String sql = "DELETE FROM booking WHERE bookingid = ?";
-            pstmt = conn.prepareStatement(sql);
-
-            pstmt.setInt(1, Integer.parseInt(paketId));
-
-            int rowsDeleted = pstmt.executeUpdate();
-
-            if (rowsDeleted > 0) {
-                JOptionPane.showMessageDialog(this, "Data berhasil dihapus!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                // Reset JTable
-                connectToDatabase(); // Reload data
-                clearForm();
-                resetBookingId();
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            try {
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
+    
+    
     
     private void clearForm() {
         konfirmasiid.setText("");
@@ -318,6 +247,8 @@ public class Bookingadmin extends javax.swing.JFrame {
         jLabel5 = new javax.swing.JLabel();
         waktu = new javax.swing.JTextField();
         konfirmasiid = new javax.swing.JTextField();
+        jButton5 = new javax.swing.JButton();
+        jButton6 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -395,6 +326,20 @@ public class Bookingadmin extends javax.swing.JFrame {
         jLabel5.setForeground(new java.awt.Color(255, 255, 255));
         jLabel5.setText("Waktu");
 
+        jButton5.setText("Konsumer delete");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+
+        jButton6.setText("Konsumer update");
+        jButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton6ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -434,17 +379,27 @@ public class Bookingadmin extends javax.swing.JFrame {
                                             .addComponent(konfirmasiid))
                                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                                .addGap(0, 0, Short.MAX_VALUE)
-                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                    .addComponent(jLabel10)
-                                                    .addComponent(jLabel11))
-                                                .addGap(35, 35, 35)
-                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                    .addComponent(usernameadmin, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                    .addComponent(adminid, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                            .addGroup(jPanel1Layout.createSequentialGroup()
                                                 .addGap(263, 263, 263)
-                                                .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))))))
+                                                .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                                        .addGap(52, 52, 52)
+                                                        .addComponent(jButton5))
+                                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                                        .addGap(0, 0, Short.MAX_VALUE)
+                                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                            .addComponent(jLabel10)
+                                                            .addComponent(jLabel11))))
+                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                                                        .addGap(35, 35, 35)
+                                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                            .addComponent(usernameadmin, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                            .addComponent(adminid, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 149, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                                        .addGap(41, 41, 41)
+                                                        .addComponent(jButton6)))))))))))
                 .addContainerGap(27, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -484,7 +439,11 @@ public class Bookingadmin extends javax.swing.JFrame {
                         .addComponent(waktu, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(jLabel5))
                     .addComponent(jButton1))
-                .addContainerGap(78, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 13, Short.MAX_VALUE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButton5)
+                    .addComponent(jButton6))
+                .addGap(42, 42, 42))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -511,9 +470,10 @@ public class Bookingadmin extends javax.swing.JFrame {
     }//GEN-LAST:event_tableModelMouseClicked
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        updateData();
-        sendKonfirmasi();
+        sendupdate();
         sendbooked();
+        sendKonfirmasi();
+        
         clearForm();
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -530,8 +490,18 @@ public class Bookingadmin extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        hapusData();
+        sendFeedbackdelete();
     }//GEN-LAST:event_jButton4ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        this.setVisible(true);
+        new Konsumerdeletebooking().setVisible(true);
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+        this.setVisible(true);
+        new Konsumerupdatebooking().setVisible(true);
+    }//GEN-LAST:event_jButton6ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -574,6 +544,8 @@ public class Bookingadmin extends javax.swing.JFrame {
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
+    private javax.swing.JButton jButton6;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;

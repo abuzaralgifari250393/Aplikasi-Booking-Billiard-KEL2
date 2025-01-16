@@ -16,14 +16,15 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.UUID;
 
-public class Konsumerfeedback extends JFrame {
+public class Konsumerdaftaruser extends JFrame {
     private JTextArea feedbackArea;
     private KafkaConsumer<String, String> consumer;
     private Thread consumerThread;
     private Connection dbConnection;
 
-    public Konsumerfeedback() {
+    public Konsumerdaftaruser() {
         setTitle("Kafka Feedback Consumer");
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -31,7 +32,7 @@ public class Konsumerfeedback extends JFrame {
         
         getContentPane().setBackground(new Color(28, 118, 90));
 
-        JLabel feedbackLabel = new JLabel("User Feedback:");
+        JLabel feedbackLabel = new JLabel("Konsumer daftar user:");
         feedbackLabel.setBounds(20, 20, 150, 25);
         feedbackLabel.setForeground(Color.WHITE);
         add(feedbackLabel);
@@ -87,13 +88,13 @@ public class Konsumerfeedback extends JFrame {
         // Kafka Consumer Configuration
         Properties props = new Properties();
         props.put("bootstrap.servers", "192.168.29.167:9092, 192.168.29.35:9092, 192.168.29.45:9092"); // Kafka server address
-        props.put("group.id", "feedback-consumer-group");
+        props.put("group.id", "DAFTARR-consumer-group");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("auto.offset.reset", "earliest"); // Start consuming from the earliest message
 
         consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Collections.singletonList("topik-feedbackuser"));
+        consumer.subscribe(Collections.singletonList("topik-daftaruser"));
 
         consumerThread = new Thread(() -> {
             try {
@@ -102,8 +103,7 @@ public class Konsumerfeedback extends JFrame {
                     for (ConsumerRecord<String, String> record : records) {
                         String feedbackMessage = record.value();
                         feedbackArea.append("Received Feedback: " + feedbackMessage + "\n\n");
-                        saveFeedbackToDatabase(feedbackMessage); // Save feedback to database
-                        
+                        saveFeedbackToDatabase(feedbackMessage);
                     }
                 }
             } catch (Exception ex) {
@@ -123,15 +123,18 @@ public class Konsumerfeedback extends JFrame {
         try {
             // Assuming message is in a simple format: {"userId":1,"username":"John","feedback":"Great app!"}
             String[] parts = message.replace("{", "").replace("}", "").replace("\"", "").split(",");
-            int userId = Integer.parseInt(parts[0].split(":")[1]);
-            String username = parts[1].split(":")[1];
-            String feedback = parts[2].split(":")[1];
+            
+            String id = parts[0].split(":")[1];
+            String Username = parts[1].split(":")[1];
+            String Password = parts[2].split(":")[1];
+            String Telp = parts[3].split(":")[1];
 
-            String query = "INSERT INTO feedback (userid, username, pesan) VALUES (?, ?, ?)";
+            String query = "INSERT INTO users (userid, nama, password, telp) VALUES (?, ?, ?, ?)";
             PreparedStatement stmt = dbConnection.prepareStatement(query);
-            stmt.setInt(1, userId);
-            stmt.setString(2, username);
-            stmt.setString(3, feedback);
+            stmt.setString(1, id);
+            stmt.setString(2, Username);
+            stmt.setString(3, Password);
+            stmt.setString(4, Telp);
 
             stmt.executeUpdate();
             feedbackArea.append("Feedback saved to database.\n");
@@ -139,10 +142,8 @@ public class Konsumerfeedback extends JFrame {
             feedbackArea.append("Error saving feedback to database: " + e.getMessage() + "\n");
         }
     }
-    
-    
 
     public static void main(String[] args) {
-        new Konsumerfeedback(); // Start the application
+        new Konsumerdaftaruser(); // Start the application
     }
 }

@@ -8,11 +8,16 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.*;
+import java.util.Properties;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 /**
  *
  * @author Lenovo
  */
 public class Feedbackadmin extends javax.swing.JFrame {
+    
+    private KafkaProducer<String, String> producer;
     private Timer refreshTimer;
     private Connection connection;
     String urlvalue = "jdbc:mysql://localhost/last?user=root&password=";
@@ -22,9 +27,36 @@ public class Feedbackadmin extends javax.swing.JFrame {
      */
     public Feedbackadmin() {
         initComponents();
+        initKafkaProducer();
         connectToDatabase();
-        loadDataMeja();
+        loadDataFeedback();
         startRefreshTimer();
+    }
+    
+    private void initKafkaProducer() {
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "192.168.29.167:9092, 192.168.29.35:9092, 192.168.29.45:9092");
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        producer = new KafkaProducer<>(props);
+    }
+    
+    private void sendFeedback() {
+        try {
+            String feedbackId = feedbackid.getText();
+            
+
+
+            String message = String.format("{\"feedbackid\":%s}",
+                    feedbackId);
+
+            producer.send(new ProducerRecord<>("topik-deletefeedbackuser", null, message));
+            JOptionPane.showMessageDialog(this, "Booking sent to Kafka!");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Failed to send booking!");
+        }
     }
     
     private void resetFeedbackId() {
@@ -41,7 +73,7 @@ public class Feedbackadmin extends javax.swing.JFrame {
             }
 
             JOptionPane.showMessageDialog(this, "Meja ID berhasil diatur ulang!");
-            loadDataMeja(); // Refresh tabel di GUI
+            loadDataFeedback(); // Refresh tabel di GUI
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Gagal mengatur ulang Meja ID.");
@@ -59,14 +91,14 @@ public class Feedbackadmin extends javax.swing.JFrame {
     
     private void startRefreshTimer() {
         // Timer to refresh the table every second (1000 milliseconds)
-        refreshTimer = new Timer(1000, e -> loadDataMeja());
+        refreshTimer = new Timer(1000, e -> loadDataFeedback());
         refreshTimer.start(); // Start the timer
     }
 
     
     
     
-    private void loadDataMeja() {
+    private void loadDataFeedback() {
         
     
         DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "UserId", "Username", "Pesan"}, 0);
@@ -89,49 +121,7 @@ public class Feedbackadmin extends javax.swing.JFrame {
         tabelModel.setModel(model);
     }
     
-    private void hapusData() {
-        String feedbackId = feedbackid.getText().trim();
-
-        if (feedbackId.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Pilih data yang akan dihapus!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        String url = "jdbc:mysql://localhost:3306/last";
-        String user = "root";
-        String password = "";
-
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-
-        try {
-            conn = DriverManager.getConnection(url, user, password);
-            String sql = "DELETE FROM feedback WHERE feedbackid = ?";
-            pstmt = conn.prepareStatement(sql);
-
-            pstmt.setInt(1, Integer.parseInt(feedbackId));
-
-            int rowsDeleted = pstmt.executeUpdate();
-
-            if (rowsDeleted > 0) {
-                JOptionPane.showMessageDialog(this, "Data berhasil dihapus!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                // Reset JTable
-                connectToDatabase();
-                loadDataMeja();// Reload data
-                clearForm();
-                resetFeedbackId();
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            try {
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
+    
     
     private void clearForm() {
         feedbackid.setText("");
@@ -164,6 +154,7 @@ public class Feedbackadmin extends javax.swing.JFrame {
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
+        jButton4 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -232,6 +223,13 @@ public class Feedbackadmin extends javax.swing.JFrame {
             }
         });
 
+        jButton4.setText("Konsumer delete");
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton4ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -248,28 +246,31 @@ public class Feedbackadmin extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 367, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(4, 4, 4)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel4)
-                            .addComponent(jLabel5))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(username)
-                            .addComponent(pesan, javax.swing.GroupLayout.DEFAULT_SIZE, 93, Short.MAX_VALUE)))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(6, 6, 6)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel2)
-                            .addComponent(jLabel3))
-                        .addGap(35, 35, 35)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(feedbackid, javax.swing.GroupLayout.PREFERRED_SIZE, 93, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(108, 108, 108)
-                                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(userid, javax.swing.GroupLayout.PREFERRED_SIZE, 93, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(92, 92, 92))
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                            .addGap(4, 4, 4)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jLabel4)
+                                .addComponent(jLabel5))
+                            .addGap(18, 18, 18)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(username)
+                                .addComponent(pesan, javax.swing.GroupLayout.DEFAULT_SIZE, 93, Short.MAX_VALUE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jButton4))
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                            .addGap(6, 6, 6)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jLabel2)
+                                .addComponent(jLabel3))
+                            .addGap(35, 35, 35)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(userid, javax.swing.GroupLayout.PREFERRED_SIZE, 93, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGroup(jPanel1Layout.createSequentialGroup()
+                                    .addComponent(feedbackid, javax.swing.GroupLayout.PREFERRED_SIZE, 93, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGap(108, 108, 108)
+                                    .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                .addGap(119, 119, 119))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -301,8 +302,9 @@ public class Feedbackadmin extends javax.swing.JFrame {
                 .addGap(6, 6, 6)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
-                    .addComponent(pesan, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(20, Short.MAX_VALUE))
+                    .addComponent(pesan, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButton4))
+                .addContainerGap(19, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -324,7 +326,8 @@ public class Feedbackadmin extends javax.swing.JFrame {
     }//GEN-LAST:event_feedbackidActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        hapusData();
+        sendFeedback();
+        resetFeedbackId();
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void tabelModelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tabelModelMouseClicked
@@ -346,6 +349,11 @@ public class Feedbackadmin extends javax.swing.JFrame {
         this.setVisible(false);
         new Dasboardadmin().setVisible(true);
     }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+        this.setVisible(true);
+        new Konsumerdeletefeedbackuser().setVisible(true);
+    }//GEN-LAST:event_jButton4ActionPerformed
     
        
     /**
@@ -388,6 +396,7 @@ public class Feedbackadmin extends javax.swing.JFrame {
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
+    private javax.swing.JButton jButton4;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;

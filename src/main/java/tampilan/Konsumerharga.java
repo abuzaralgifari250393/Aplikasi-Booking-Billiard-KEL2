@@ -4,6 +4,7 @@
  */
 package tampilan;
 
+
 import java.awt.Color;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -17,14 +18,14 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Properties;
 
-public class Konsumerfeedback extends JFrame {
+public class Konsumerharga extends JFrame {
     private JTextArea feedbackArea;
     private KafkaConsumer<String, String> consumer;
     private Thread consumerThread;
     private Connection dbConnection;
 
-    public Konsumerfeedback() {
-        setTitle("Kafka Feedback Consumer");
+    public Konsumerharga() {
+        setTitle("Kafka Konsumer Booking Admin");
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(null);
@@ -87,27 +88,26 @@ public class Konsumerfeedback extends JFrame {
         // Kafka Consumer Configuration
         Properties props = new Properties();
         props.put("bootstrap.servers", "192.168.29.167:9092, 192.168.29.35:9092, 192.168.29.45:9092"); // Kafka server address
-        props.put("group.id", "feedback-consumer-group");
+        props.put("group.id", "bookingg-consumer-group");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("auto.offset.reset", "earliest"); // Start consuming from the earliest message
 
         consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Collections.singletonList("topik-feedbackuser"));
+        consumer.subscribe(Collections.singletonList("topik-harga1"));
 
         consumerThread = new Thread(() -> {
             try {
                 while (true) {
-                    ConsumerRecords<String, String> records = consumer.poll(1000); // Wait for messages
+                    ConsumerRecords<String, String> records = consumer.poll(100); // Wait for messages
                     for (ConsumerRecord<String, String> record : records) {
                         String feedbackMessage = record.value();
                         feedbackArea.append("Received Feedback: " + feedbackMessage + "\n\n");
-                        saveFeedbackToDatabase(feedbackMessage); // Save feedback to database
-                        
+                        saveFeedbackToDatabase(feedbackMessage);
                     }
                 }
             } catch (Exception ex) {
-                feedbackArea.append("Kafka Konsumer Dimatikan.");
+                feedbackArea.append("Kafka Konsumer Dimatikan");
             } finally {
                 if (consumer != null) {
                     consumer.close();
@@ -118,31 +118,34 @@ public class Konsumerfeedback extends JFrame {
         consumerThread.start();
         feedbackArea.append("Kafka Consumer started successfully.\n");
     }
-
+    
     private void saveFeedbackToDatabase(String message) {
         try {
-            // Assuming message is in a simple format: {"userId":1,"username":"John","feedback":"Great app!"}
-            String[] parts = message.replace("{", "").replace("}", "").replace("\"", "").split(",");
-            int userId = Integer.parseInt(parts[0].split(":")[1]);
-            String username = parts[1].split(":")[1];
-            String feedback = parts[2].split(":")[1];
+            // Mengasumsikan message dalam format sederhana: {"userid": 1, "nomormeja": 3, "nama": "abu", "paketid": 2, "waktu": "11 am", "harga": 20000, "status": "Pending"}
+            message = message.replace("{", "").replace("}", "").replace("\"", "");
+            String[] parts = message.split(",");
 
-            String query = "INSERT INTO feedback (userid, username, pesan) VALUES (?, ?, ?)";
+            String NamaPaket = parts[0].split(":")[1].trim();  // Trim spasi agar tidak ada kesalahan
+            int Harga = Integer.parseInt(parts[1].split(":")[1].trim());  // Trim spasi agar tidak ada kesalahan
+            String Durasi = parts[2].split(":")[1].trim();
+            
+
+            // Query SQL Anda
+            String query = "INSERT INTO paket (nama_paket, harga, durasi) VALUES (?, ?, ?)";
             PreparedStatement stmt = dbConnection.prepareStatement(query);
-            stmt.setInt(1, userId);
-            stmt.setString(2, username);
-            stmt.setString(3, feedback);
+            stmt.setString(1, NamaPaket);
+            stmt.setInt(2, Harga);
+            stmt.setString(3, Durasi);
+            
 
             stmt.executeUpdate();
-            feedbackArea.append("Feedback saved to database.\n");
+            feedbackArea.append("Feedback berhasil disimpan ke database.\n");
         } catch (Exception e) {
-            feedbackArea.append("Error saving feedback to database: " + e.getMessage() + "\n");
+            feedbackArea.append("Terjadi kesalahan saat menyimpan feedback ke database: " + e.getMessage() + "\n");
         }
     }
     
-    
-
     public static void main(String[] args) {
-        new Konsumerfeedback(); // Start the application
+        new Konsumerharga(); // Start the application
     }
 }

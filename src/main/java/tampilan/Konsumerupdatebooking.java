@@ -17,21 +17,21 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Properties;
 
-public class Konsumerfeedback extends JFrame {
+public class Konsumerupdatebooking extends JFrame {
     private JTextArea feedbackArea;
     private KafkaConsumer<String, String> consumer;
     private Thread consumerThread;
     private Connection dbConnection;
 
-    public Konsumerfeedback() {
-        setTitle("Kafka Feedback Consumer");
+    public Konsumerupdatebooking() {
+        setTitle("Kafka Update Booking Consumer");
         setSize(500, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(null);
         
         getContentPane().setBackground(new Color(28, 118, 90));
 
-        JLabel feedbackLabel = new JLabel("User Feedback:");
+        JLabel feedbackLabel = new JLabel("Konsumer update:");
         feedbackLabel.setBounds(20, 20, 150, 25);
         feedbackLabel.setForeground(Color.WHITE);
         add(feedbackLabel);
@@ -87,13 +87,13 @@ public class Konsumerfeedback extends JFrame {
         // Kafka Consumer Configuration
         Properties props = new Properties();
         props.put("bootstrap.servers", "192.168.29.167:9092, 192.168.29.35:9092, 192.168.29.45:9092"); // Kafka server address
-        props.put("group.id", "feedback-consumer-group");
+        props.put("group.id", "updatebooking122-consumer-group");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("auto.offset.reset", "earliest"); // Start consuming from the earliest message
 
         consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Collections.singletonList("topik-feedbackuser"));
+        consumer.subscribe(Collections.singletonList("topik-updatebookinguser"));
 
         consumerThread = new Thread(() -> {
             try {
@@ -102,8 +102,8 @@ public class Konsumerfeedback extends JFrame {
                     for (ConsumerRecord<String, String> record : records) {
                         String feedbackMessage = record.value();
                         feedbackArea.append("Received Feedback: " + feedbackMessage + "\n\n");
-                        saveFeedbackToDatabase(feedbackMessage); // Save feedback to database
                         
+                        updateToDatabase(feedbackMessage);
                     }
                 }
             } catch (Exception ex) {
@@ -119,30 +119,35 @@ public class Konsumerfeedback extends JFrame {
         feedbackArea.append("Kafka Consumer started successfully.\n");
     }
 
-    private void saveFeedbackToDatabase(String message) {
+    
+    
+    private void updateToDatabase(String message) {
         try {
-            // Assuming message is in a simple format: {"userId":1,"username":"John","feedback":"Great app!"}
+            // Memproses pesan dalam format sederhana: {"userId":1,"username":"John","feedback":"Great app!"}
             String[] parts = message.replace("{", "").replace("}", "").replace("\"", "").split(",");
-            int userId = Integer.parseInt(parts[0].split(":")[1]);
-            String username = parts[1].split(":")[1];
-            String feedback = parts[2].split(":")[1];
+            int bookingId = Integer.parseInt(parts[0].split(":")[1]);
+    
+          
 
-            String query = "INSERT INTO feedback (userid, username, pesan) VALUES (?, ?, ?)";
-            PreparedStatement stmt = dbConnection.prepareStatement(query);
-            stmt.setInt(1, userId);
-            stmt.setString(2, username);
-            stmt.setString(3, feedback);
+            String updateQuery = "UPDATE booking SET status = 'konfirmasi' WHERE bookingid = ?";
+            PreparedStatement stmt = dbConnection.prepareStatement(updateQuery);
+            stmt.setInt(1, bookingId);
+            int rowsUpdated = stmt.executeUpdate();
 
-            stmt.executeUpdate();
-            feedbackArea.append("Feedback saved to database.\n");
+            if (rowsUpdated > 0) {
+                feedbackArea.append("Booking ID " + bookingId + " status updated to 'konfirmasi'.\n");
+            } else {
+                feedbackArea.append("No booking found with ID " + bookingId + ".\n");
+            }
+
+        
+            feedbackArea.append("Feedback delete saved to database.\n");
         } catch (Exception e) {
             feedbackArea.append("Error saving feedback to database: " + e.getMessage() + "\n");
         }
     }
-    
-    
 
     public static void main(String[] args) {
-        new Konsumerfeedback(); // Start the application
+        new Konsumerupdatebooking(); // Start the application
     }
 }

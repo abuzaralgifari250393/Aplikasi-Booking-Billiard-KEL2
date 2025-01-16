@@ -31,7 +31,7 @@ public class Konsumerkonfirmasi extends JFrame {
         
         getContentPane().setBackground(new Color(28, 118, 90));
 
-        JLabel feedbackLabel = new JLabel("User Feedback:");
+        JLabel feedbackLabel = new JLabel("Notifikasi Konfirmasi dari admin:");
         feedbackLabel.setBounds(20, 20, 150, 25);
         feedbackLabel.setForeground(Color.WHITE);
         add(feedbackLabel);
@@ -75,8 +75,8 @@ public class Konsumerkonfirmasi extends JFrame {
     private void startConsumer() {
         // Kafka Consumer Configuration
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092"); // Kafka server address
-        props.put("group.id", "konfirmasi-consumer-group");
+        props.put("bootstrap.servers", "192.168.29.167:9092, 192.168.29.35:9092, 192.168.29.45:9092"); // Kafka server address
+        props.put("group.id", "konfirmasi2-consumer-group");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("auto.offset.reset", "earliest"); // Start consuming from the earliest message
